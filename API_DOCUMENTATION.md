@@ -474,6 +474,94 @@ Leave community (self-remove).
 
 ---
 
+### Profile Endpoints
+
+#### `GET /api/profile/`
+
+Get current user's profile.
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+  "user_id": "user_abc123",
+  "email": "user@example.com",
+  "name": "John Doe",
+  "picture": "https://example.com/avatar.jpg",
+  "bio": "Tech enthusiast and AI researcher",
+  "phone": "+1-555-0123",
+  "location": "San Francisco, CA",
+  "is_super_admin": false,
+  "created_at": "2026-04-08T08:00:00Z",
+  "updated_at": "2026-04-08T09:00:00Z"
+}
+```
+
+---
+
+#### `PATCH /api/profile/`
+
+Update current user's profile.
+
+**Request Body:** (all fields optional)
+```json
+{
+  "name": "John Smith",
+  "picture": "https://example.com/new-avatar.jpg",
+  "bio": "Updated bio text",
+  "phone": "+1-555-9999",
+  "location": "New York, NY"
+}
+```
+
+**Validations:**
+- Bio: Max 500 characters
+- Phone: Max 20 characters
+
+**Response:** Updated profile object.
+
+---
+
+#### `GET /api/profiles/` (Super Admin Only)
+
+List all user profiles with pagination.
+
+**Query Parameters:**
+- `skip` (default: 0) - Number of records to skip
+- `limit` (default: 100) - Maximum records to return
+
+**Response:**
+```json
+[
+  {
+    "user_id": "user_abc123",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "picture": "https://example.com/avatar.jpg",
+    "bio": "Tech enthusiast",
+    "phone": "+1-555-0123",
+    "location": "San Francisco, CA",
+    "is_super_admin": false,
+    "created_at": "2026-04-08T08:00:00Z",
+    "updated_at": "2026-04-08T09:00:00Z"
+  }
+]
+```
+
+---
+
+#### `GET /api/profiles/{user_id}` (Super Admin Only)
+
+Get specific user's profile.
+
+**Response:** Profile object (same as above).
+
+---
+
 ## Error Responses
 
 ### 400 Bad Request
@@ -514,12 +602,17 @@ Leave community (self-remove).
   user_id: string;          // Custom UUID
   email: string;
   name: string;
-  picture?: string;         // From Google OAuth
+  picture?: string;         // Profile photo URL
+  bio?: string;             // User bio (max 500 chars)
+  phone?: string;           // Phone number (max 20 chars)
+  location?: string;        // User location
   is_super_admin: boolean;
   created_at: datetime;
   updated_at: datetime;
 }
 ```
+
+**Note:** Profile fields (name, picture, bio, phone, location) are shared across the entire platform, not per-community. Community-specific roles and memberships are managed separately.
 
 ### Community
 ```typescript

@@ -12,8 +12,12 @@ class User(BaseModel):
     email: EmailStr
     name: str
     password_hash: Optional[str] = None  # Only for email/password auth
-    picture: Optional[str] = None  # From Google OAuth
+    picture: Optional[str] = None  # From Google OAuth or uploaded
     is_super_admin: bool = False
+    # Profile fields
+    bio: Optional[str] = None
+    phone: Optional[str] = None
+    location: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -45,6 +49,9 @@ class UserResponse(BaseModel):
     name: str
     picture: Optional[str] = None
     is_super_admin: bool
+    bio: Optional[str] = None
+    phone: Optional[str] = None
+    location: Optional[str] = None
     created_at: datetime
 
 
@@ -213,3 +220,43 @@ class PermissionCheck(BaseModel):
     user_id: str
     community_slug: str
     permission_name: str
+
+
+# ============ PROFILE MODELS ============
+
+class ProfileUpdate(BaseModel):
+    """Update user profile"""
+    name: Optional[str] = None
+    picture: Optional[str] = None
+    bio: Optional[str] = None
+    phone: Optional[str] = None
+    location: Optional[str] = None
+    
+    @field_validator('bio')
+    @classmethod
+    def validate_bio(cls, v):
+        if v and len(v) > 500:
+            raise ValueError('Bio must be 500 characters or less')
+        return v
+    
+    @field_validator('phone')
+    @classmethod
+    def validate_phone(cls, v):
+        if v and len(v) > 20:
+            raise ValueError('Phone must be 20 characters or less')
+        return v
+
+
+class ProfileResponse(BaseModel):
+    """Complete user profile response"""
+    user_id: str
+    email: str
+    name: str
+    picture: Optional[str] = None
+    bio: Optional[str] = None
+    phone: Optional[str] = None
+    location: Optional[str] = None
+    is_super_admin: bool
+    created_at: datetime
+    updated_at: datetime
+

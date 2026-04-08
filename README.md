@@ -26,6 +26,12 @@ A Good Life is a **backend architecture** for a multi-manager community platform
 - Administrators can assign specific roles
 - Support for role changes and member removal
 
+✅ **User Profile Management**
+- Platform-wide user profiles
+- Profile fields: name, picture, bio, phone, location
+- Users manage their own profiles
+- Super admin can view all profiles
+
 ---
 
 ## Architecture
@@ -49,7 +55,8 @@ backend/
 └── routes/
     ├── auth_routes.py     # Authentication endpoints
     ├── community_routes.py # Community CRUD
-    └── membership_routes.py # Membership management
+    ├── membership_routes.py # Membership management
+    └── profile_routes.py   # User profile management
 ```
 
 ---
@@ -134,6 +141,12 @@ See [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) for complete permission matri
    - Email/password for traditional login
    - Google OAuth for social login
    - Both methods share same user database
+
+6. ✅ **Platform-wide user profiles**
+   - Shared profile across all communities
+   - Users control their own profile data
+   - Profile includes: name, picture, bio, phone, location
+   - Super admin can view all profiles
 
 ---
 
@@ -309,6 +322,10 @@ See `/app/memory/test_credentials.md` for current test accounts.
 - [x] Different roles in different communities
 - [x] Permission checks work correctly
 - [x] Subdirectory URLs work with slugs
+- [x] User profile management (get/update)
+- [x] Profile shared across all communities
+- [x] Super admin can view all profiles
+- [x] Regular users can only update own profile
 
 ---
 
@@ -351,7 +368,8 @@ See `/app/memory/test_credentials.md` for current test accounts.
 │   └── routes/
 │       ├── auth_routes.py        # Auth endpoints
 │       ├── community_routes.py   # Community CRUD
-│       └── membership_routes.py  # Membership management
+│       ├── membership_routes.py  # Membership management
+│       └── profile_routes.py     # Profile management
 │
 ├── memory/
 │   └── test_credentials.md       # Test account credentials

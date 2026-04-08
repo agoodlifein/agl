@@ -10,6 +10,7 @@ from pathlib import Path
 from routes.auth_routes import create_auth_router
 from routes.community_routes import create_community_router
 from routes.membership_routes import create_membership_router
+from routes.profile_routes import create_profile_router, create_profiles_router
 
 
 ROOT_DIR = Path(__file__).parent
@@ -72,6 +73,14 @@ api_router.include_router(community_router)
 # Membership routes
 membership_router = create_membership_router(db)
 api_router.include_router(membership_router)
+
+# Profile routes
+profile_router = create_profile_router(db)
+api_router.include_router(profile_router)
+
+# Profiles routes (super admin)
+profiles_router = create_profiles_router(db)
+api_router.include_router(profiles_router)
 
 
 # Include the API router in the main app
