@@ -51,7 +51,13 @@ def create_community_router(db):
             name=community_data.name,
             slug=community_data.slug,
             description=community_data.description,
-            created_by=current_user.user_id
+            created_by=current_user.user_id,
+            logo=community_data.logo,
+            cover_image=community_data.cover_image,
+            intro_copy=community_data.intro_copy,
+            welcome_text=community_data.welcome_text,
+            accent_color=community_data.accent_color,
+            status='active'
         )
         
         community_doc = community.model_dump()

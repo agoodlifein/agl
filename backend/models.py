@@ -83,9 +83,17 @@ class Community(BaseModel):
     slug: str  # Unique, URL-friendly identifier
     description: str
     created_by: str  # user_id of super admin
+    # Branding fields
+    logo: Optional[str] = None  # Logo URL
+    cover_image: Optional[str] = None  # Cover image URL
+    intro_copy: Optional[str] = None  # Short tagline (max 200 chars)
+    welcome_text: Optional[str] = None  # Welcome message (max 1000 chars)
+    accent_color: Optional[str] = None  # Hex color (#RRGGBB)
+    # Status management
+    status: str = "active"  # active, paused, disabled
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    is_active: bool = True
+    is_active: bool = True  # Deprecated in favor of status, kept for compatibility
     settings: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -95,6 +103,12 @@ class CommunityCreate(BaseModel):
     slug: str
     description: str
     community_manager_id: Optional[str] = None  # Assign initial manager
+    # Branding fields
+    logo: Optional[str] = None
+    cover_image: Optional[str] = None
+    intro_copy: Optional[str] = None
+    welcome_text: Optional[str] = None
+    accent_color: Optional[str] = None
     
     @field_validator('slug')
     @classmethod
@@ -103,14 +117,65 @@ class CommunityCreate(BaseModel):
         if not re.match(r'^[a-z0-9-]+$', v):
             raise ValueError('Slug must contain only lowercase letters, numbers, and hyphens')
         return v
+    
+    @field_validator('intro_copy')
+    @classmethod
+    def validate_intro_copy(cls, v):
+        if v and len(v) > 200:
+            raise ValueError('Intro copy must be 200 characters or less')
+        return v
+    
+    @field_validator('welcome_text')
+    @classmethod
+    def validate_welcome_text(cls, v):
+        if v and len(v) > 1000:
+            raise ValueError('Welcome text must be 1000 characters or less')
+        return v
+    
+    @field_validator('accent_color')
+    @classmethod
+    def validate_accent_color(cls, v):
+        if v:
+            import re
+            if not re.match(r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$', v):
+                raise ValueError('Accent color must be a valid hex color (#RRGGBB or #RGB)')
+        return v
 
 
 class CommunityUpdate(BaseModel):
     """Update community details"""
     name: Optional[str] = None
     description: Optional[str] = None
+    logo: Optional[str] = None
+    cover_image: Optional[str] = None
+    intro_copy: Optional[str] = None
+    welcome_text: Optional[str] = None
+    accent_color: Optional[str] = None
     is_active: Optional[bool] = None
     settings: Optional[Dict[str, Any]] = None
+    
+    @field_validator('intro_copy')
+    @classmethod
+    def validate_intro_copy(cls, v):
+        if v and len(v) > 200:
+            raise ValueError('Intro copy must be 200 characters or less')
+        return v
+    
+    @field_validator('welcome_text')
+    @classmethod
+    def validate_welcome_text(cls, v):
+        if v and len(v) > 1000:
+            raise ValueError('Welcome text must be 1000 characters or less')
+        return v
+    
+    @field_validator('accent_color')
+    @classmethod
+    def validate_accent_color(cls, v):
+        if v:
+            import re
+            if not re.match(r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$', v):
+                raise ValueError('Accent color must be a valid hex color (#RRGGBB or #RGB)')
+        return v
 
 
 class CommunityResponse(BaseModel):
@@ -120,10 +185,35 @@ class CommunityResponse(BaseModel):
     slug: str
     description: str
     created_by: str
+    logo: Optional[str] = None
+    cover_image: Optional[str] = None
+    intro_copy: Optional[str] = None
+    welcome_text: Optional[str] = None
+    accent_color: Optional[str] = None
+    status: str
     created_at: datetime
     updated_at: datetime
     is_active: bool
     settings: Dict[str, Any]
+
+
+class CommunityStatusUpdate(BaseModel):
+    """Update community status"""
+    status: str
+    
+    @field_validator('status')
+    @classmethod
+    def validate_status(cls, v):
+        allowed_statuses = ['active', 'paused', 'disabled']
+        if v not in allowed_statuses:
+            raise ValueError(f'Status must be one of: {allowed_statuses}')
+        return v
+
+
+class ManagerAssignment(BaseModel):
+    """Assign community manager"""
+    user_id: str
+    replace_existing: bool = False  # If True, removes other managers
 
 
 # ============ MEMBERSHIP MODELS ============

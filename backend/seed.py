@@ -116,6 +116,7 @@ async def seed_database():
     # Community indexes
     await db.communities.create_index('slug', unique=True)
     await db.communities.create_index('community_id', unique=True)
+    await db.communities.create_index('status')
     print("   ✓ Community indexes created")
     
     # Membership indexes

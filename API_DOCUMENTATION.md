@@ -593,6 +593,120 @@ Get specific user's profile.
 
 ---
 
+### Super Admin Community Management
+
+#### `POST /api/admin/communities/{slug}/activate`
+
+Activate a community (**Super Admin Only**).
+
+**Response:**
+```json
+{
+  "message": "Community activated successfully",
+  "slug": "premium-tech",
+  "status": "active"
+}
+```
+
+---
+
+#### `POST /api/admin/communities/{slug}/pause`
+
+Pause a community (**Super Admin Only**).
+
+**Response:**
+```json
+{
+  "message": "Community paused successfully",
+  "slug": "premium-tech",
+  "status": "paused"
+}
+```
+
+---
+
+#### `POST /api/admin/communities/{slug}/disable`
+
+Disable a community (**Super Admin Only**).
+
+**Response:**
+```json
+{
+  "message": "Community disabled successfully",
+  "slug": "premium-tech",
+  "status": "disabled"
+}
+```
+
+---
+
+#### `POST /api/admin/communities/{slug}/assign-manager`
+
+Assign community manager (**Super Admin Only**).
+
+**Request Body:**
+```json
+{
+  "user_id": "user_abc123",
+  "replace_existing": false
+}
+```
+
+**Parameters:**
+- `user_id` - User ID to assign as manager
+- `replace_existing` - If true, removes all other managers (default: false)
+
+**Response:**
+```json
+{
+  "message": "Community manager assigned successfully",
+  "community": "Premium Tech Hub",
+  "manager_id": "user_abc123",
+  "manager_name": "John Doe"
+}
+```
+
+---
+
+#### `DELETE /api/admin/communities/{slug}/remove-manager/{user_id}`
+
+Remove community manager (**Super Admin Only**).
+
+Downgrades manager to regular member role.
+
+**Response:**
+```json
+{
+  "message": "Community manager removed successfully",
+  "community": "Premium Tech Hub",
+  "user_id": "user_abc123"
+}
+```
+
+---
+
+#### `GET /api/admin/communities/{slug}/managers`
+
+List all managers of a community (**Super Admin Only**).
+
+**Response:**
+```json
+[
+  {
+    "membership_id": "memb_abc123",
+    "user_id": "user_abc123",
+    "user_name": "John Doe",
+    "user_email": "john@example.com",
+    "community_id": "comm_def456",
+    "role_name": "community_manager",
+    "joined_at": "2026-04-08T08:00:00Z",
+    "is_active": true
+  }
+]
+```
+
+---
+
 ## Error Responses
 
 ### 400 Bad Request
@@ -653,12 +767,31 @@ Get specific user's profile.
   slug: string;             // Unique, URL-friendly
   description: string;
   created_by: string;       // user_id
+  // Branding fields
+  logo?: string;            // Logo URL
+  cover_image?: string;     // Cover image URL
+  intro_copy?: string;      // Short tagline (max 200 chars)
+  welcome_text?: string;    // Welcome message (max 1000 chars)
+  accent_color?: string;    // Hex color (#RRGGBB or #RGB)
+  // Status management
+  status: string;           // active, paused, disabled
   created_at: datetime;
   updated_at: datetime;
-  is_active: boolean;
+  is_active: boolean;       // Deprecated, use status
   settings: object;
 }
 ```
+
+**Status Values:**
+- `active` - Community is fully operational
+- `paused` - Temporarily suspended (maintenance, review)
+- `disabled` - Permanently disabled by admin
+
+**Branding Guidelines:**
+- Accent color must be valid hex format
+- Intro copy limited to 200 characters
+- Welcome text limited to 1000 characters
+- Logo and cover must be valid image URLs
 
 ### CommunityMembership
 ```typescript
