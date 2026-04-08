@@ -10,6 +10,7 @@ from discussion_models import (
 )
 from models import User
 from auth import get_current_user
+from notification_engine import notify
 from permissions import get_user_role_in_community, check_permission
 
 
@@ -350,6 +351,15 @@ def create_discussion_router(db):
             {'thread_id': thread_id},
             {'$set': {'last_activity_at': datetime.now(timezone.utc).isoformat()}}
         )
+        
+        # Notify thread author about the reply (if replier is not the author)
+        if thread['author_id'] != current_user.user_id:
+            await notify(db, 'discussion_reply', community['community_id'], {
+                'community_name': community['name'],
+                'thread_title': thread['title'],
+                'reply_author': current_user.name,
+                'reply_preview': post_data.content[:100],
+            }, recipient_user_ids=[thread['author_id']])
         
         for field in ['created_at', 'updated_at']:
             if isinstance(post_doc.get(field), str):

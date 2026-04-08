@@ -166,6 +166,103 @@ async def seed_database():
     await db.event_media.create_index('community_id')
     print("   ✓ Event indexes created")
     
+    # Notification indexes
+    await db.notification_templates.create_index('template_id', unique=True)
+    await db.notification_templates.create_index([('notification_type', 1), ('channel', 1)], unique=True)
+    await db.community_template_overrides.create_index('override_id', unique=True)
+    await db.community_template_overrides.create_index([('template_id', 1), ('community_id', 1)], unique=True)
+    await db.notification_logs.create_index('log_id', unique=True)
+    await db.notification_logs.create_index('community_id')
+    await db.notification_logs.create_index([('created_at', -1)])
+    await db.notification_logs.create_index([('notification_type', 1), ('status', 1)])
+    print("   ✓ Notification indexes created")
+    
+    # ============ SEED DEFAULT NOTIFICATION TEMPLATES ============
+    print("\n📧 Seeding default notification templates...")
+    
+    default_templates = [
+        {
+            'notification_type': 'welcome_member',
+            'channel': 'email',
+            'name': 'Welcome Email',
+            'subject': 'Welcome to {{community_name}}!',
+            'body': 'Hi {{user_name}},\n\nYour request to join {{community_name}} has been approved. Welcome aboard!\n\nFeel free to introduce yourself and explore the community discussions and events.\n\nBest,\nThe {{community_name}} Team',
+            'placeholders': ['user_name', 'community_name'],
+        },
+        {
+            'notification_type': 'post_approved',
+            'channel': 'email',
+            'name': 'Post Approved',
+            'subject': 'Your post in {{community_name}} has been approved',
+            'body': 'Hi {{user_name}},\n\nYour discussion thread "{{thread_title}}" in {{community_name}} has been approved and is now visible to all members.\n\nBest,\nThe {{community_name}} Team',
+            'placeholders': ['user_name', 'community_name', 'thread_title'],
+        },
+        {
+            'notification_type': 'post_rejected',
+            'channel': 'email',
+            'name': 'Post Rejected',
+            'subject': 'Your post in {{community_name}} was not approved',
+            'body': 'Hi {{user_name}},\n\nYour discussion thread "{{thread_title}}" in {{community_name}} was not approved by a moderator. Please review our community guidelines and feel free to resubmit.\n\nBest,\nThe {{community_name}} Team',
+            'placeholders': ['user_name', 'community_name', 'thread_title'],
+        },
+        {
+            'notification_type': 'member_banned',
+            'channel': 'email',
+            'name': 'Member Banned',
+            'subject': 'You have been removed from {{community_name}}',
+            'body': 'Hi {{user_name}},\n\nYou have been banned from {{community_name}}. If you believe this was a mistake, please contact the community administrators.\n\nBest,\nThe {{community_name}} Team',
+            'placeholders': ['user_name', 'community_name'],
+        },
+        {
+            'notification_type': 'discussion_reply',
+            'channel': 'email',
+            'name': 'Discussion Reply',
+            'subject': 'New reply to "{{thread_title}}" in {{community_name}}',
+            'body': 'Hi {{user_name}},\n\n{{reply_author}} replied to your discussion "{{thread_title}}" in {{community_name}}:\n\n"{{reply_preview}}"\n\nBest,\nThe {{community_name}} Team',
+            'placeholders': ['user_name', 'community_name', 'thread_title', 'reply_author', 'reply_preview'],
+        },
+        {
+            'notification_type': 'new_event',
+            'channel': 'email',
+            'name': 'New Event (Email)',
+            'subject': 'New event in {{community_name}}: {{event_title}}',
+            'body': 'Hi {{user_name}},\n\nA new event has been announced in {{community_name}}!\n\n{{event_title}}\nDate: {{event_date}} {{event_time}}\nVenue: {{event_venue}}\n\n{{event_description}}\n\nBest,\nThe {{community_name}} Team',
+            'placeholders': ['user_name', 'community_name', 'event_title', 'event_date', 'event_time', 'event_venue', 'event_description'],
+        },
+        {
+            'notification_type': 'new_event',
+            'channel': 'whatsapp',
+            'name': 'New Event (WhatsApp)',
+            'subject': None,
+            'body': '*New event in {{community_name}}*\n\n*{{event_title}}*\nDate: {{event_date}} {{event_time}}\nVenue: {{event_venue}}\n\n{{event_description}}',
+            'placeholders': ['community_name', 'event_title', 'event_date', 'event_time', 'event_venue', 'event_description'],
+        },
+        {
+            'notification_type': 'join_request_received',
+            'channel': 'email',
+            'name': 'Join Request Received',
+            'subject': 'New join request for {{community_name}}',
+            'body': 'Hi {{manager_name}},\n\n{{user_name}} ({{user_email}}) has requested to join {{community_name}}.\n\nPlease review the request in your community dashboard.\n\nBest,\nThe {{community_name}} Team',
+            'placeholders': ['manager_name', 'community_name', 'user_name', 'user_email'],
+        },
+    ]
+
+    from notification_models import NotificationTemplate
+    for tmpl_data in default_templates:
+        existing = await db.notification_templates.find_one({
+            'notification_type': tmpl_data['notification_type'],
+            'channel': tmpl_data['channel'],
+        })
+        if not existing:
+            tmpl = NotificationTemplate(**tmpl_data, created_by='system')
+            doc = tmpl.model_dump()
+            doc['created_at'] = doc['created_at'].isoformat()
+            doc['updated_at'] = doc['updated_at'].isoformat()
+            await db.notification_templates.insert_one(doc)
+    
+    template_count = await db.notification_templates.count_documents({})
+    print(f"   ✓ {template_count} notification templates seeded")
+    
     # ============ DATA MIGRATION ============
     print("\n🔧 Running data migrations...")
     

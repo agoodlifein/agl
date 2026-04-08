@@ -19,6 +19,7 @@ from routes.member_onboarding_routes import create_member_onboarding_router, cre
 from routes.discussion_routes import create_discussion_router
 from routes.discussion_moderation_routes import create_discussion_moderation_router
 from routes.event_routes import create_event_router, create_event_management_router
+from routes.notification_routes import create_admin_notification_router, create_manager_notification_router
 
 
 ROOT_DIR = Path(__file__).parent
@@ -121,6 +122,14 @@ api_router.include_router(event_router)
 # Event management routes
 event_management_router = create_event_management_router(db)
 api_router.include_router(event_management_router)
+
+# Notification routes (admin)
+admin_notification_router = create_admin_notification_router(db)
+api_router.include_router(admin_notification_router)
+
+# Notification routes (manager)
+manager_notification_router = create_manager_notification_router(db)
+api_router.include_router(manager_notification_router)
 
 
 # Include the API router in the main app

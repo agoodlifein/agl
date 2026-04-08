@@ -7,6 +7,7 @@ from models import (
     MembershipStatusResponse, MembershipResponse, CommunityMembership
 )
 from auth import get_current_user
+from notification_engine import notify
 from permissions import get_user_role_in_community
 
 
@@ -166,6 +167,19 @@ def create_member_onboarding_router(db):
             
             await db.join_requests.insert_one(request_doc)
             
+            # Notify community managers about new join request
+            managers = await db.community_memberships.find(
+                {'community_id': community['community_id'], 'role_name': 'community_manager', 'is_active': True},
+                {'_id': 0, 'user_id': 1}
+            ).to_list(100)
+            manager_ids = [m['user_id'] for m in managers]
+            if manager_ids:
+                await notify(db, 'join_request_received', community['community_id'], {
+                    'community_name': community['name'],
+                    'user_name': current_user.name,
+                    'user_email': current_user.email,
+                }, recipient_user_ids=manager_ids)
+            
             return {
                 "message": "Join request submitted successfully",
                 "community": community['name'],
@@ -315,6 +329,13 @@ def create_join_request_management_router(db):
             }
         )
         
+        # Notify the approved member
+        approved_user = await db.users.find_one({'user_id': join_request['user_id']}, {'_id': 0, 'name': 1})
+        await notify(db, 'welcome_member', community['community_id'], {
+            'community_name': community['name'],
+            'user_name': approved_user['name'] if approved_user else 'Member',
+        }, recipient_user_ids=[join_request['user_id']])
+        
         return {
             "message": "Join request approved successfully",
             "request_id": request_id
@@ -422,6 +443,13 @@ def create_join_request_management_router(db):
                 }
             }
         )
+        
+        # Notify banned member
+        banned_user = await db.users.find_one({'user_id': user_id}, {'_id': 0, 'name': 1})
+        await notify(db, 'member_banned', community['community_id'], {
+            'community_name': community['name'],
+            'user_name': banned_user['name'] if banned_user else 'Member',
+        }, recipient_user_ids=[user_id])
         
         return {
             "message": "Member banned successfully",

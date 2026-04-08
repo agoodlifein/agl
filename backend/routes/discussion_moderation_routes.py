@@ -8,6 +8,7 @@ from discussion_models import (
 )
 from models import User
 from auth import get_current_user
+from notification_engine import notify
 from permissions import get_user_role_in_community, check_permission
 
 
@@ -101,6 +102,48 @@ def create_discussion_moderation_router(db):
             {'$set': {'status': 'published', 'updated_at': datetime.now(timezone.utc).isoformat()}}
         )
         
+        # Notify thread author
+        await notify(db, 'post_approved', community['community_id'], {
+            'community_name': community['name'],
+            'thread_title': thread['title'],
+        }, recipient_user_ids=[thread['author_id']])
+        
         return {"message": "Thread approved successfully"}
+
+    @router.post("/threads/{thread_id}/reject")
+    async def reject_thread(
+        slug: str,
+        thread_id: str,
+        current_user: Annotated[User, Depends(get_user_dep)]
+    ):
+        """Reject pending thread"""
+        community = await db.communities.find_one({'slug': slug}, {'_id': 0})
+        if not community:
+            raise HTTPException(status_code=404, detail="Community not found")
+        
+        await require_moderator(current_user, community['community_id'])
+        
+        thread = await db.discussion_threads.find_one(
+            {'thread_id': thread_id, 'community_id': community['community_id']},
+            {'_id': 0}
+        )
+        if not thread:
+            raise HTTPException(status_code=404, detail="Thread not found")
+        
+        if thread['status'] != 'pending':
+            raise HTTPException(status_code=400, detail=f"Thread is {thread['status']}")
+        
+        await db.discussion_threads.update_one(
+            {'thread_id': thread_id},
+            {'$set': {'status': 'rejected', 'updated_at': datetime.now(timezone.utc).isoformat()}}
+        )
+        
+        # Notify thread author
+        await notify(db, 'post_rejected', community['community_id'], {
+            'community_name': community['name'],
+            'thread_title': thread['title'],
+        }, recipient_user_ids=[thread['author_id']])
+        
+        return {"message": "Thread rejected successfully"}
 
     return router
