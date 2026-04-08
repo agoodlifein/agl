@@ -24,14 +24,23 @@ def create_discussion_router(db):
     ):
         return await get_current_user(db, session_token, authorization)
 
+    async def get_optional_user_dep(
+        session_token: Annotated[str | None, Cookie()] = None,
+        authorization: Annotated[str | None, Header()] = None
+    ):
+        try:
+            return await get_current_user(db, session_token, authorization)
+        except Exception:
+            return None
+
     # ============ CATEGORIES ============
     
     @router.get("/categories", response_model=List[CategoryResponse])
     async def list_categories(
         slug: str,
-        current_user: Annotated[User, Depends(get_user_dep)]
+        current_user=Depends(get_optional_user_dep)
     ):
-        """List all active categories in community"""
+        """List all active categories in community (public)"""
         community = await db.communities.find_one({'slug': slug}, {'_id': 0})
         if not community:
             raise HTTPException(status_code=404, detail="Community not found")
@@ -115,12 +124,12 @@ def create_discussion_router(db):
     @router.get("/threads", response_model=List[ThreadResponse])
     async def list_threads(
         slug: str,
-        current_user: Annotated[User, Depends(get_user_dep)],
+        current_user=Depends(get_optional_user_dep),
         category_id: str = None,
         skip: int = 0,
         limit: int = 50
     ):
-        """List threads in community or category"""
+        """List threads in community or category (public)"""
         community = await db.communities.find_one({'slug': slug}, {'_id': 0})
         if not community:
             raise HTTPException(status_code=404, detail="Community not found")
@@ -162,9 +171,9 @@ def create_discussion_router(db):
     async def get_thread(
         slug: str,
         thread_id: str,
-        current_user: Annotated[User, Depends(get_user_dep)]
+        current_user=Depends(get_optional_user_dep)
     ):
-        """Get thread details"""
+        """Get thread details (public)"""
         community = await db.communities.find_one({'slug': slug}, {'_id': 0})
         if not community:
             raise HTTPException(status_code=404, detail="Community not found")
@@ -373,11 +382,11 @@ def create_discussion_router(db):
     async def list_posts(
         slug: str,
         thread_id: str,
-        current_user: Annotated[User, Depends(get_user_dep)],
+        current_user=Depends(get_optional_user_dep),
         skip: int = 0,
         limit: int = 100
     ):
-        """List posts in thread"""
+        """List posts in thread (public)"""
         community = await db.communities.find_one({'slug': slug}, {'_id': 0})
         if not community:
             raise HTTPException(status_code=404, detail="Community not found")

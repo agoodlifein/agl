@@ -32,13 +32,22 @@ def create_event_router(db):
     ):
         return await get_current_user(db, session_token, authorization)
 
+    async def get_optional_user_dep(
+        session_token: Annotated[str | None, Cookie()] = None,
+        authorization: Annotated[str | None, Header()] = None
+    ):
+        try:
+            return await get_current_user(db, session_token, authorization)
+        except Exception:
+            return None
+
     @router.get("/events", response_model=List[EventResponse])
     async def list_events(
         slug: str,
-        current_user: Annotated[User, Depends(get_user_dep)],
+        current_user=Depends(get_optional_user_dep),
         upcoming_only: bool = True
     ):
-        """List published events in community"""
+        """List published events in community (public)"""
         community = await db.communities.find_one({'slug': slug}, {'_id': 0})
         if not community:
             raise HTTPException(status_code=404, detail="Community not found")

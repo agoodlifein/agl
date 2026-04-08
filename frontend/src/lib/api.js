@@ -1,4 +1,4 @@
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
 function getToken() {
   return localStorage.getItem('token');
@@ -12,36 +12,48 @@ function clearToken() {
   localStorage.removeItem('token');
 }
 
-async function apiFetch(path, options = {}) {
+function headers() {
+  const h = { 'Content-Type': 'application/json' };
   const token = getToken();
-  const headers = { ...options.headers };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  if (!(options.body instanceof FormData)) {
-    headers['Content-Type'] = 'application/json';
-  }
+  if (token) h['Authorization'] = `Bearer ${token}`;
+  return h;
+}
 
-  const res = await fetch(`${API}${path}`, { ...options, headers, credentials: 'include' });
-  if (res.status === 401) {
-    clearToken();
-    window.location.href = '/auth';
-    throw new Error('Unauthorized');
-  }
-  const data = await res.json().catch(() => null);
+async function handleResponse(res) {
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch { data = text; }
   if (!res.ok) {
-    const msg = data?.detail;
-    throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg) || res.statusText);
+    const message = (data && data.detail) || `Request failed (${res.status})`;
+    throw new Error(message);
   }
   return data;
 }
 
 export const api = {
-  get: (path) => apiFetch(path),
-  post: (path, body) => apiFetch(path, { method: 'POST', body: JSON.stringify(body) }),
-  patch: (path, body) => apiFetch(path, { method: 'PATCH', body: JSON.stringify(body) }),
-  del: (path) => apiFetch(path, { method: 'DELETE' }),
-  upload: (path, formData) => apiFetch(path, { method: 'POST', body: formData }),
-  getToken,
-  setToken,
-  clearToken,
-  API_URL: API,
+  get: async (path) => {
+    const res = await fetch(`${API}${path}`, { headers: headers() });
+    return handleResponse(res);
+  },
+  post: async (path, body) => {
+    const res = await fetch(`${API}${path}`, { method: 'POST', headers: headers(), body: body !== undefined ? JSON.stringify(body) : undefined });
+    return handleResponse(res);
+  },
+  patch: async (path, body) => {
+    const res = await fetch(`${API}${path}`, { method: 'PATCH', headers: headers(), body: JSON.stringify(body) });
+    return handleResponse(res);
+  },
+  del: async (path) => {
+    const res = await fetch(`${API}${path}`, { method: 'DELETE', headers: headers() });
+    return handleResponse(res);
+  },
+  upload: async (path, formData) => {
+    const h = {};
+    const token = getToken();
+    if (token) h['Authorization'] = `Bearer ${token}`;
+    const res = await fetch(`${API}${path}`, { method: 'POST', headers: h, body: formData });
+    return handleResponse(res);
+  },
 };
+
+export { getToken, setToken, clearToken, API };

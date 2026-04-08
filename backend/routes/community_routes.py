@@ -21,6 +21,15 @@ def create_community_router(db):
     ):
         return await get_current_user(db, session_token, authorization)
 
+    async def get_optional_user_dep(
+        session_token: Annotated[str | None, Cookie()] = None,
+        authorization: Annotated[str | None, Header()] = None
+    ):
+        try:
+            return await get_current_user(db, session_token, authorization)
+        except Exception:
+            return None
+
     @router.post("/", response_model=CommunityResponse)
     async def create_community(
         community_data: CommunityCreate,
@@ -100,9 +109,9 @@ def create_community_router(db):
 
     @router.get("/", response_model=List[CommunityResponse])
     async def list_communities(
-        current_user: Annotated[User, Depends(get_user_dep)]
+        current_user=Depends(get_optional_user_dep)
     ):
-        """List all active communities"""
+        """List all active communities (public)"""
         communities = await db.communities.find(
             {'is_active': True},
             {'_id': 0}
@@ -140,9 +149,9 @@ def create_community_router(db):
     @router.get("/{slug}", response_model=CommunityResponse)
     async def get_community(
         slug: str,
-        current_user: Annotated[User, Depends(get_user_dep)]
+        current_user=Depends(get_optional_user_dep)
     ):
-        """Get community by slug"""
+        """Get community by slug (public)"""
         community = await db.communities.find_one(
             {'slug': slug},
             {'_id': 0}
