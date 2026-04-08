@@ -226,6 +226,37 @@ Logout current user and clear session.
 
 ---
 
+#### `POST /api/auth/change-password`
+
+Change user password (email/password authentication only).
+
+**Request Body:**
+```json
+{
+  "current_password": "OldPassword123",
+  "new_password": "NewPassword456"
+}
+```
+
+**Validations:**
+- Current password must match existing password
+- New password must be at least 8 characters
+- Only available for email/password users (not OAuth users)
+
+**Response:**
+```json
+{
+  "message": "Password changed successfully"
+}
+```
+
+**Error Responses:**
+- `400 Bad Request` - OAuth user trying to change password
+- `401 Unauthorized` - Current password incorrect
+- `422 Unprocessable Entity` - New password validation failed
+
+---
+
 ### Community Endpoints
 
 #### `POST /api/communities/`

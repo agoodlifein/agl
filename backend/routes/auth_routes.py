@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 from models import (
     UserCreate, UserLogin, UserResponse, AuthResponse,
-    SessionData
+    SessionData, PasswordChange
 )
 from auth import (
     hash_password, verify_password, create_jwt_token,
@@ -200,5 +200,41 @@ def create_auth_router(db):
         )
         
         return {"message": "Logged out successfully"}
+
+    @router.post("/change-password")
+    async def change_password(
+        password_data: PasswordChange,
+        current_user: Annotated[User, Depends(get_user_dep)]
+    ):
+        """Change user password (email/password auth only)"""
+        # Check if user has password (email/password auth)
+        if not current_user.password_hash:
+            raise HTTPException(
+                status_code=400,
+                detail="Password change not available. This account uses OAuth authentication."
+            )
+        
+        # Verify current password
+        if not verify_password(password_data.current_password, current_user.password_hash):
+            raise HTTPException(
+                status_code=401,
+                detail="Current password is incorrect"
+            )
+        
+        # Hash new password
+        new_password_hash = hash_password(password_data.new_password)
+        
+        # Update password in database
+        await db.users.update_one(
+            {'user_id': current_user.user_id},
+            {
+                '$set': {
+                    'password_hash': new_password_hash,
+                    'updated_at': datetime.now(timezone.utc).isoformat()
+                }
+            }
+        )
+        
+        return {"message": "Password changed successfully"}
 
     return router

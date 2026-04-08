@@ -31,6 +31,7 @@ A Good Life is a **backend architecture** for a multi-manager community platform
 - Profile fields: name, picture, bio, phone, location
 - Users manage their own profiles
 - Super admin can view all profiles
+- Password change for email/password users
 
 ---
 
@@ -326,6 +327,9 @@ See `/app/memory/test_credentials.md` for current test accounts.
 - [x] Profile shared across all communities
 - [x] Super admin can view all profiles
 - [x] Regular users can only update own profile
+- [x] Password change with current password verification
+- [x] Password validation (min 8 characters)
+- [x] OAuth users blocked from password change
 
 ---
 
@@ -339,6 +343,8 @@ See `/app/memory/test_credentials.md` for current test accounts.
 ✅ **Role-based access control** at endpoint level
 ✅ **Custom user IDs** to avoid MongoDB `_id` exposure
 ✅ **Timezone-aware timestamps** for security checks
+✅ **Password change** requires current password verification
+✅ **Minimum password length** enforcement (8 characters)
 
 ### Recommendations for Production
 

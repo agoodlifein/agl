@@ -260,3 +260,19 @@ class ProfileResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+
+# ============ PASSWORD MANAGEMENT MODELS ============
+
+class PasswordChange(BaseModel):
+    """Change user password"""
+    current_password: str
+    new_password: str
+    
+    @field_validator('new_password')
+    @classmethod
+    def validate_new_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('New password must be at least 8 characters')
+        return v
+
+
