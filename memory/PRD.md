@@ -1,28 +1,32 @@
 # A Good Life - Community Platform PRD
 
 ## Original Problem Statement
-Build the core backend architecture for "A Good Life" as a multi-manager community platform. Shared authentication (email/password + Google OAuth via Emergent), RBAC with 4 roles (super_admin, community_manager, moderator, member), subdirectory-based community URLs, and role-based access control at the community level.
+Multi-manager community platform with shared auth (email/password + Google OAuth via Emergent), RBAC (super_admin, community_manager, moderator, member), subdirectory-based community URLs, and role-based access control at the community level. Backend-first architecture.
 
 ## Tech Stack
 - **Backend**: FastAPI (Python) + MongoDB (Motor Asyncio)
 - **Frontend**: React 19 + Shadcn/UI + Tailwind CSS (minimal test UI)
 - **Auth**: JWT + Emergent Google OAuth (cookie-based sessions)
-- **File Storage**: Local filesystem with FastAPI StaticFiles
-- **Notifications**: Pluggable provider architecture (MockProvider for dev, ready for SendGrid/Twilio)
+- **Notifications**: Pluggable provider (MockProvider for dev, ready for SendGrid/Twilio)
+- **Billing**: Admin-managed (no live payment gateway yet)
 
 ## Architecture
 ```
 /app/backend/
-├── server.py                    # Main entry, routers, middleware, static mounts
-├── auth.py                      # JWT, bcrypt, session management, Emergent OAuth
-├── models.py                    # Core Pydantic models (User, Community, Membership, etc.)
-├── permissions.py               # RBAC role definitions and permission checking
-├── event_models.py              # Event and Media Pydantic models
+├── server.py                    # Entry, 16 routers, middleware, static mounts
+├── auth.py                      # JWT, bcrypt, session, Emergent OAuth
+├── models.py                    # Core models (User, Community, Membership)
+├── permissions.py               # RBAC role definitions
+├── event_models.py              # Event & Media models
 ├── discussion_models.py         # Discussion thread/post models
-├── notification_models.py       # Template, Override, Log, Request models
-├── notification_engine.py       # Core engine: trigger → resolve → render → dispatch → log
-├── notification_providers.py    # Pluggable ABC + MockProvider (SendGrid/Twilio stubs)
-├── seed.py                      # DB seeding (admin, roles, indexes, templates, migrations)
+├── notification_models.py       # Template, Override, Log models
+├── notification_engine.py       # Trigger → resolve → render → dispatch → log
+├── notification_providers.py    # Pluggable ABC + MockProvider
+├── search_models.py             # Search query/response models
+├── seo_models.py                # SEO metadata, schema.org, redirects
+├── subscription_models.py       # Plan, Subscription, BillingAuditLog
+├── governance.py                # Subscription middleware, branding limits, cleanup
+├── seed.py                      # DB seeding, indexes, templates, migrations
 └── routes/
     ├── auth_routes.py
     ├── community_routes.py
@@ -34,39 +38,63 @@ Build the core backend architecture for "A Good Life" as a multi-manager communi
     ├── discussion_routes.py         (+ notification triggers)
     ├── discussion_moderation_routes.py (+ notification triggers)
     ├── event_routes.py
-    └── notification_routes.py       # Admin template CRUD + Manager overrides + Logs
+    ├── notification_routes.py
+    ├── search_routes.py
+    ├── seo_routes.py
+    ├── subscription_routes.py
+    └── governance_routes.py
 ```
 
-## What's Been Implemented
+## Completed Phases
 
-### Phase 1: Core Auth, RBAC, Profiles ✅
-### Phase 2: Super Admin Community Creation ✅
-### Phase 3: Community Manager Module ✅
-### Phase 4: Member Onboarding ✅
-### Phase 5: Discussions/Forum ✅
-### Phase 6: Events & Media ✅ (33/33 backend tests)
+### Phase 1-5: Core Platform ✅
+Auth, RBAC, profiles, super admin, community manager, member onboarding, discussions/forum
+
+### Phase 6: Events & Media ✅ (33/33 tests)
+Event CRUD, media upload, static serving, auto-cleanup
+
+### Phase 7: Notifications ✅ (33/33 tests)
+7 trigger types, 8 templates, pluggable providers (MOCKED), template hierarchy, delivery logs
+
 ### Frontend Test UI ✅ (95% pass rate)
+Login/signup/OAuth, dashboard, profile, communities, discussions, events
 
-### Phase 7: Notifications & Communication ✅ (33/33 tests, 2026-04-08)
-- **7 notification types**: welcome_member, post_approved, post_rejected, member_banned, discussion_reply, new_event, join_request_received
-- **8 default templates** seeded (new_event has both email + WhatsApp)
-- **Pluggable providers**: MockProvider (dev), ABC ready for SendGrid (email) and Twilio (WhatsApp)
-- **System-decided channel mapping**: email for most, email+whatsapp for new_event
-- **Template hierarchy**: Super admin controls universal templates, can lock templates. Managers customize unlocked templates per community.
-- **Audience segmentation**: By role within community (all, member, moderator, community_manager)
-- **Delivery logs**: Per-notification log with status, rendered content, recipient info. Admin sees all, manager sees community-scoped. Aggregated stats endpoint.
-- **Trigger hooks**: Integrated into member_onboarding, discussion, discussion_moderation routes
-- **RBAC**: Admin-only for template management + global logs. Manager-only for community overrides + community logs.
-- **MOCKED**: Email and WhatsApp sending via MockProvider (no live API keys needed yet)
+### Phase 8: Community-Scoped Search ✅ (2026-04-08)
+- Search discussions, events, members within a community
+- Filtered by permissions (members only see published, managers see drafts)
+- Non-members blocked (403), minimum 2-char query
 
-## DB Collections
+### Phase 9: SEO & Metadata ✅ (2026-04-08)
+- Auto-generated meta title, description, OG tags from content
+- Manual override with PATCH, reset with DELETE
+- Schema.org JSON-LD: WebPage (communities), DiscussionForumPosting (threads), Event (events)
+- Breadcrumb markup, canonical URLs
+- Slug redirect tracking and resolution
+
+### Phase 10: Subscription & Billing ✅ (52 tests)
+- Plans: monthly/yearly, price, features, limits
+- Subscriptions: assign with trial, activate, pause, resume, cancel, mark-paid offline
+- Trials: time-based, member-count-based, or both; manual extension
+- Status workflow: trial → active ↔ paused → canceled/expired
+- Full audit trail with previous/new status tracking
+
+### Phase 11: Governance & Platform Control ✅ (52 tests)
+- Subscription enforcement middleware: blocks writes (402) when canceled/expired, reads always pass
+- Auto-expiry: trials and billing periods auto-expire when dates pass
+- Branding limits: logo <200KB, cover <1MB, color hex validation, field length limits
+- Media cleanup: removes orphaned event media directories
+- System integrity check: counts all collections, flags orphaned data
+
+## DB Collections (15)
 users, roles, communities, community_memberships, join_requests, user_sessions,
 discussion_categories, discussion_threads, posts, events, event_media,
-notification_templates, community_template_overrides, notification_logs
+notification_templates, community_template_overrides, notification_logs,
+seo_metadata, slug_redirects, plans, subscriptions, billing_audit_logs
 
 ## Prioritized Backlog
-### P1 - Content Search & Filtering
-### P1 - Connect real email/WhatsApp providers (SendGrid, Twilio) when keys available
+### P1 - Connect real email/WhatsApp providers (SendGrid, Twilio)
+### P1 - Connect payment gateway (Stripe) for automated billing
 ### P2 - User notification preferences (opt-in/opt-out per type/channel)
 ### P2 - Advanced Profile Features (deferred by user)
+### P2 - Full merge with Inner Circle GitHub project (design + functionality)
 ### P3 - Event reminders, community status change notifications
