@@ -52,6 +52,7 @@ def create_community_router(db):
             slug=community_data.slug,
             description=community_data.description,
             created_by=current_user.user_id,
+            privacy=community_data.privacy if hasattr(community_data, 'privacy') and community_data.privacy else 'public',
             logo=community_data.logo,
             cover_image=community_data.cover_image,
             intro_copy=community_data.intro_copy,

@@ -138,6 +138,12 @@ async def seed_database():
     await db.roles.create_index('name', unique=True)
     print("   ✓ Role indexes created")
     
+    # Join request indexes
+    await db.join_requests.create_index('request_id', unique=True)
+    await db.join_requests.create_index([('user_id', 1), ('community_id', 1)])
+    await db.join_requests.create_index('status')
+    print("   ✓ Join request indexes created")
+    
     print("\n✨ Database seeding completed successfully!")
     print("\n🔑 Super Admin Credentials:")
     print(f"   Email: {super_admin_email}")

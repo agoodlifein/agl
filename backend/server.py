@@ -13,6 +13,7 @@ from routes.membership_routes import create_membership_router
 from routes.profile_routes import create_profile_router, create_profiles_router
 from routes.admin_community_routes import create_admin_community_router
 from routes.manager_routes import create_manager_router
+from routes.member_onboarding_routes import create_member_onboarding_router, create_join_request_management_router
 
 
 ROOT_DIR = Path(__file__).parent
@@ -91,6 +92,14 @@ api_router.include_router(admin_community_router)
 # Community manager routes
 manager_router = create_manager_router(db)
 api_router.include_router(manager_router)
+
+# Member onboarding routes
+member_onboarding_router = create_member_onboarding_router(db)
+api_router.include_router(member_onboarding_router)
+
+# Join request management routes
+join_request_router = create_join_request_management_router(db)
+api_router.include_router(join_request_router)
 
 
 # Include the API router in the main app

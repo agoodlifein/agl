@@ -83,6 +83,8 @@ class Community(BaseModel):
     slug: str  # Unique, URL-friendly identifier
     description: str
     created_by: str  # user_id of super admin
+    # Privacy settings
+    privacy: str = "public"  # public or private
     # Branding fields (editable by managers)
     logo: Optional[str] = None  # Logo URL
     cover_image: Optional[str] = None  # Cover image URL
@@ -105,6 +107,7 @@ class CommunityCreate(BaseModel):
     slug: str
     description: str
     community_manager_id: Optional[str] = None  # Assign initial manager
+    privacy: Optional[str] = "public"  # public or private
     # Branding fields
     logo: Optional[str] = None
     cover_image: Optional[str] = None
@@ -113,6 +116,13 @@ class CommunityCreate(BaseModel):
     accent_color: Optional[str] = None
     section_headings: Optional[Dict[str, str]] = None
     cta_text: Optional[str] = None
+    
+    @field_validator('privacy')
+    @classmethod
+    def validate_privacy(cls, v):
+        if v and v not in ['public', 'private']:
+            raise ValueError('Privacy must be either "public" or "private"')
+        return v
     
     @field_validator('slug')
     @classmethod
@@ -196,6 +206,7 @@ class CommunityResponse(BaseModel):
     slug: str
     description: str
     created_by: str
+    privacy: str
     logo: Optional[str] = None
     cover_image: Optional[str] = None
     intro_copy: Optional[str] = None
@@ -239,7 +250,15 @@ class CommunityManagerUpdate(BaseModel):
     accent_color: Optional[str] = None
     section_headings: Optional[Dict[str, str]] = None
     cta_text: Optional[str] = None
+    privacy: Optional[str] = None  # Managers can change privacy
     # Note: Cannot update slug, status, settings, or structural fields
+    
+    @field_validator('privacy')
+    @classmethod
+    def validate_privacy(cls, v):
+        if v and v not in ['public', 'private']:
+            raise ValueError('Privacy must be either "public" or "private"')
+        return v
     
     @field_validator('intro_copy')
     @classmethod
@@ -272,6 +291,55 @@ class CommunityManagerUpdate(BaseModel):
         return v
 
 
+# ============ JOIN REQUEST MODELS ============
+
+class JoinRequest(BaseModel):
+    """Request to join a private community"""
+    request_id: str = Field(default_factory=lambda: f"req_{uuid.uuid4().hex[:12]}")
+    user_id: str
+    community_id: str
+    status: str = "pending"  # pending, approved, rejected
+    requested_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    reviewed_at: Optional[datetime] = None
+    reviewed_by: Optional[str] = None  # user_id who approved/rejected
+    message: Optional[str] = None  # Optional message from requester
+
+
+class JoinRequestCreate(BaseModel):
+    """Create join request"""
+    message: Optional[str] = None
+    
+    @field_validator('message')
+    @classmethod
+    def validate_message(cls, v):
+        if v and len(v) > 500:
+            raise ValueError('Message must be 500 characters or less')
+        return v
+
+
+class JoinRequestResponse(BaseModel):
+    """Join request response"""
+    request_id: str
+    user_id: str
+    user_name: str
+    user_email: str
+    community_id: str
+    status: str
+    requested_at: datetime
+    reviewed_at: Optional[datetime] = None
+    reviewed_by: Optional[str] = None
+    message: Optional[str] = None
+
+
+class MembershipStatusResponse(BaseModel):
+    """Member's status in a community"""
+    is_member: bool
+    role: Optional[str] = None
+    has_pending_request: bool
+    is_banned: bool
+    can_join: bool  # True for public, or if approved for private
+
+
 # ============ MEMBERSHIP MODELS ============
 
 class CommunityMembership(BaseModel):
@@ -282,6 +350,9 @@ class CommunityMembership(BaseModel):
     role_name: str  # community_manager, moderator, member
     joined_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     is_active: bool = True
+    # Ban tracking
+    banned_at: Optional[datetime] = None
+    banned_by: Optional[str] = None  # user_id who banned
 
 
 class MembershipCreate(BaseModel):
