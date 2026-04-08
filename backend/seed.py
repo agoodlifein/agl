@@ -156,6 +156,16 @@ async def seed_database():
     await db.posts.create_index('community_id')
     print("   ✓ Discussion indexes created")
     
+    # Event indexes
+    await db.events.create_index('event_id', unique=True)
+    await db.events.create_index('community_id')
+    await db.events.create_index([('community_id', 1), ('event_date', 1)])
+    await db.events.create_index('status')
+    await db.event_media.create_index('media_id', unique=True)
+    await db.event_media.create_index('event_id')
+    await db.event_media.create_index('community_id')
+    print("   ✓ Event indexes created")
+    
     print("\n✨ Database seeding completed successfully!")
     print("\n🔑 Super Admin Credentials:")
     print(f"   Email: {super_admin_email}")

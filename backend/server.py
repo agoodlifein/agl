@@ -1,4 +1,6 @@
 from fastapi import FastAPI, APIRouter
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -16,6 +18,7 @@ from routes.manager_routes import create_manager_router
 from routes.member_onboarding_routes import create_member_onboarding_router, create_join_request_management_router
 from routes.discussion_routes import create_discussion_router
 from routes.discussion_moderation_routes import create_discussion_moderation_router
+from routes.event_routes import create_event_router, create_event_management_router
 
 
 ROOT_DIR = Path(__file__).parent
@@ -111,9 +114,22 @@ api_router.include_router(discussion_router)
 discussion_moderation_router = create_discussion_moderation_router(db)
 api_router.include_router(discussion_moderation_router)
 
+# Event routes
+event_router = create_event_router(db)
+api_router.include_router(event_router)
+
+# Event management routes
+event_management_router = create_event_management_router(db)
+api_router.include_router(event_management_router)
+
 
 # Include the API router in the main app
 app.include_router(api_router)
+
+# ============ STATIC FILE SERVING (MEDIA) ============
+MEDIA_ROOT = Path("/app/media/events")
+MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
+app.mount("/api/media/events", StaticFiles(directory=str(MEDIA_ROOT)), name="event-media")
 
 
 # ============ MIDDLEWARE ============
