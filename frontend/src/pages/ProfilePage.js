@@ -84,8 +84,7 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      {user?.password_hash !== undefined && (
-        <Card>
+      <Card>
           <CardHeader><CardTitle className="text-base">Change Password</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={changePassword} className="space-y-3">
@@ -95,7 +94,6 @@ export default function ProfilePage() {
             </form>
           </CardContent>
         </Card>
-      )}
     </div>
   );
 }

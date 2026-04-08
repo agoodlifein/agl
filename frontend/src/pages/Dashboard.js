@@ -26,9 +26,9 @@ export default function Dashboard() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-sm text-gray-500">Welcome, {user?.name}
+          <div className="text-sm text-gray-500">Welcome, {user?.name}
             {isAdmin && <Badge className="ml-2" variant="destructive">Super Admin</Badge>}
-          </p>
+          </div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => navigate('/profile')} data-testid="profile-link">Profile</Button>
