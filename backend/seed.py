@@ -144,6 +144,18 @@ async def seed_database():
     await db.join_requests.create_index('status')
     print("   ✓ Join request indexes created")
     
+    # Discussion indexes
+    await db.discussion_categories.create_index('category_id', unique=True)
+    await db.discussion_categories.create_index('community_id')
+    await db.discussion_threads.create_index('thread_id', unique=True)
+    await db.discussion_threads.create_index('community_id')
+    await db.discussion_threads.create_index('category_id')
+    await db.discussion_threads.create_index([('is_pinned', -1), ('last_activity_at', -1)])
+    await db.posts.create_index('post_id', unique=True)
+    await db.posts.create_index('thread_id')
+    await db.posts.create_index('community_id')
+    print("   ✓ Discussion indexes created")
+    
     print("\n✨ Database seeding completed successfully!")
     print("\n🔑 Super Admin Credentials:")
     print(f"   Email: {super_admin_email}")
