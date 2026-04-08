@@ -57,6 +57,8 @@ def create_community_router(db):
             intro_copy=community_data.intro_copy,
             welcome_text=community_data.welcome_text,
             accent_color=community_data.accent_color,
+            section_headings=community_data.section_headings or {},
+            cta_text=community_data.cta_text,
             status='active'
         )
         

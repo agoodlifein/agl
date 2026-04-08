@@ -83,13 +83,15 @@ class Community(BaseModel):
     slug: str  # Unique, URL-friendly identifier
     description: str
     created_by: str  # user_id of super admin
-    # Branding fields
+    # Branding fields (editable by managers)
     logo: Optional[str] = None  # Logo URL
     cover_image: Optional[str] = None  # Cover image URL
     intro_copy: Optional[str] = None  # Short tagline (max 200 chars)
     welcome_text: Optional[str] = None  # Welcome message (max 1000 chars)
     accent_color: Optional[str] = None  # Hex color (#RRGGBB)
-    # Status management
+    section_headings: Dict[str, str] = Field(default_factory=dict)  # Customizable section titles
+    cta_text: Optional[str] = None  # Call-to-action text (max 100 chars)
+    # Status management (super admin only)
     status: str = "active"  # active, paused, disabled
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -109,6 +111,8 @@ class CommunityCreate(BaseModel):
     intro_copy: Optional[str] = None
     welcome_text: Optional[str] = None
     accent_color: Optional[str] = None
+    section_headings: Optional[Dict[str, str]] = None
+    cta_text: Optional[str] = None
     
     @field_validator('slug')
     @classmethod
@@ -130,6 +134,13 @@ class CommunityCreate(BaseModel):
     def validate_welcome_text(cls, v):
         if v and len(v) > 1000:
             raise ValueError('Welcome text must be 1000 characters or less')
+        return v
+    
+    @field_validator('cta_text')
+    @classmethod
+    def validate_cta_text(cls, v):
+        if v and len(v) > 100:
+            raise ValueError('CTA text must be 100 characters or less')
         return v
     
     @field_validator('accent_color')
@@ -190,6 +201,8 @@ class CommunityResponse(BaseModel):
     intro_copy: Optional[str] = None
     welcome_text: Optional[str] = None
     accent_color: Optional[str] = None
+    section_headings: Dict[str, str] = Field(default_factory=dict)
+    cta_text: Optional[str] = None
     status: str
     created_at: datetime
     updated_at: datetime
@@ -214,6 +227,49 @@ class ManagerAssignment(BaseModel):
     """Assign community manager"""
     user_id: str
     replace_existing: bool = False  # If True, removes other managers
+
+
+class CommunityManagerUpdate(BaseModel):
+    """Update community - Community Manager restricted fields"""
+    name: Optional[str] = None
+    logo: Optional[str] = None
+    cover_image: Optional[str] = None
+    intro_copy: Optional[str] = None
+    welcome_text: Optional[str] = None
+    accent_color: Optional[str] = None
+    section_headings: Optional[Dict[str, str]] = None
+    cta_text: Optional[str] = None
+    # Note: Cannot update slug, status, settings, or structural fields
+    
+    @field_validator('intro_copy')
+    @classmethod
+    def validate_intro_copy(cls, v):
+        if v and len(v) > 200:
+            raise ValueError('Intro copy must be 200 characters or less')
+        return v
+    
+    @field_validator('welcome_text')
+    @classmethod
+    def validate_welcome_text(cls, v):
+        if v and len(v) > 1000:
+            raise ValueError('Welcome text must be 1000 characters or less')
+        return v
+    
+    @field_validator('cta_text')
+    @classmethod
+    def validate_cta_text(cls, v):
+        if v and len(v) > 100:
+            raise ValueError('CTA text must be 100 characters or less')
+        return v
+    
+    @field_validator('accent_color')
+    @classmethod
+    def validate_accent_color(cls, v):
+        if v:
+            import re
+            if not re.match(r'^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$', v):
+                raise ValueError('Accent color must be a valid hex color (#RRGGBB or #RGB)')
+        return v
 
 
 # ============ MEMBERSHIP MODELS ============
