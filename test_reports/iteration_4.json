@@ -1,0 +1,136 @@
+{
+  "summary": "Phases 8-11 Backend Testing Complete - All 52 tests passed, 3 skipped. Search, SEO, Subscription/Billing, and Governance APIs fully functional. Subscription enforcement middleware correctly blocks writes (402) for canceled subscriptions while allowing reads.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_phases_8_11.py",
+    "/app/test_reports/pytest/pytest_phases_8_11.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Phase 8 Search: Community-scoped search works correctly with type filters (all/discussions/events/members). Non-members get 403. Query min length (2 chars) enforced.",
+    "Phase 9 SEO: Auto-generation works for community/discussion/event entities. Schema.org JSON-LD includes breadcrumbs. Manual override via PATCH, reset via DELETE. Redirects endpoint functional.",
+    "Phase 10 Plans: Full CRUD working. Duplicate name+cycle rejected. Cannot delete plan with active subscriptions.",
+    "Phase 10 Subscriptions: State machine transitions working (trial→active→paused→active, cancel from any state). Trial extension works. Mark-paid offline works. Audit logs track all actions with previous/new status.",
+    "Phase 11 Governance: Branding limits, media cleanup, and system integrity check all working. System check reports orphaned memberships, expired trials, and expired billing.",
+    "Phase 11 Subscription Enforcement: Middleware correctly blocks POST/PATCH/DELETE on community routes when subscription is canceled/expired (returns 402). GET requests pass through. Admin routes exempt.",
+    "RBAC: All /api/admin/* routes require super admin (403 for non-admin). Search requires membership. SEO updates require community manager."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_phases_8_11.py"
+  ],
+  "success_rate": {
+    "backend": "100% (52 passed, 3 skipped)",
+    "frontend": "N/A - Backend only testing"
+  },
+  "test_credentials": {
+    "super_admin": {
+      "email": "admin@agoodlife.com",
+      "password": "Admin@123"
+    },
+    "manager_user": {
+      "email": "notiftest@test.com",
+      "password": "Test@12345"
+    },
+    "member_user": {
+      "email": "joiner@test.com",
+      "password": "Join@12345"
+    },
+    "outsider_user": {
+      "email": "outsider@test.com",
+      "password": "Test@12345"
+    }
+  },
+  "seed_data_creation": "Created test plans (cleaned up after tests). Test subscriptions created and state transitions tested.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Phases 8-11 fully tested. Key findings: (1) event-test community has CANCELED subscription - writes blocked with 402. (2) private-notif community subscription also canceled. (3) All admin billing/governance routes require super admin. (4) Search requires community membership. (5) SEO updates require community manager. (6) Subscription enforcement middleware auto-expires trials when trial_end_date passes.",
+  "tests_executed": {
+    "phase_8_search": [
+      "GET /api/communities/{slug}/search - requires auth (401)",
+      "GET /api/communities/{slug}/search - requires membership (403 for non-members)",
+      "GET /api/communities/{slug}/search?type=all - returns discussions, events, members",
+      "GET /api/communities/{slug}/search?type=discussions - only discussions",
+      "GET /api/communities/{slug}/search?type=events - only events",
+      "GET /api/communities/{slug}/search?type=members - only members",
+      "GET /api/communities/{slug}/search?type=invalid - returns 400",
+      "GET /api/communities/{slug}/search?q=a - short query rejected (422)",
+      "GET /api/communities/nonexistent/search - returns 404"
+    ],
+    "phase_9_seo": [
+      "GET /api/communities/{slug}/seo/community/self - auto-generated with schema.org",
+      "GET /api/communities/{slug}/seo/discussion/{id} - DiscussionForumPosting schema",
+      "GET /api/communities/{slug}/seo/event/{id} - Event schema",
+      "GET /api/communities/{slug}/seo/invalid/{id} - returns 400",
+      "PATCH /api/communities/{slug}/seo/community/self - requires manager (403)",
+      "PATCH /api/communities/{slug}/seo/community/self - creates manual override",
+      "DELETE /api/communities/{slug}/seo/community/self - resets to auto",
+      "GET /api/communities/{slug}/seo/redirects - lists redirects",
+      "GET /api/seo/resolve-redirect?old_slug=x - returns 404 for nonexistent"
+    ],
+    "phase_10_plans": [
+      "GET /api/admin/billing/plans - requires admin (403)",
+      "GET /api/admin/billing/plans - lists all plans",
+      "POST /api/admin/billing/plans - creates plan",
+      "POST /api/admin/billing/plans - duplicate rejected (400)",
+      "PATCH /api/admin/billing/plans/{id} - updates plan",
+      "DELETE /api/admin/billing/plans/{id} - deletes plan without subscriptions"
+    ],
+    "phase_10_subscriptions": [
+      "GET /api/admin/billing/subscriptions - lists all",
+      "POST /api/admin/billing/subscriptions/assign - assigns with trial",
+      "POST /api/admin/billing/subscriptions/{id}/activate - trial→active",
+      "POST /api/admin/billing/subscriptions/{id}/pause - active→paused",
+      "POST /api/admin/billing/subscriptions/{id}/resume - paused→active",
+      "POST /api/admin/billing/subscriptions/{id}/pause - cannot pause from trial (400)",
+      "POST /api/admin/billing/subscriptions/{id}/cancel - cancels subscription",
+      "POST /api/admin/billing/subscriptions/{id}/cancel - cannot cancel already canceled (400)",
+      "POST /api/admin/billing/subscriptions/{id}/mark-paid - marks paid offline",
+      "POST /api/admin/billing/subscriptions/{id}/extend-trial - extends trial",
+      "POST /api/admin/billing/subscriptions/{id}/extend-trial - only for trial status (400)"
+    ],
+    "phase_10_audit": [
+      "GET /api/admin/billing/audit-logs - lists all logs",
+      "GET /api/admin/billing/audit-logs?action=assigned - filters by action",
+      "Audit logs contain previous_status, new_status, action, performed_by",
+      "GET /api/admin/billing/audit-logs - requires admin (403)"
+    ],
+    "phase_10_community_subscription": [
+      "GET /api/admin/billing/communities/{id}/subscription - returns active subscription or 404"
+    ],
+    "phase_11_governance": [
+      "GET /api/admin/governance/branding-limits - requires admin (403)",
+      "GET /api/admin/governance/branding-limits - returns limits config",
+      "POST /api/admin/governance/cleanup-media - requires admin (403)",
+      "POST /api/admin/governance/cleanup-media - runs cleanup",
+      "GET /api/admin/governance/system-check - requires admin (403)",
+      "GET /api/admin/governance/system-check - returns collections, issues, status"
+    ],
+    "phase_11_subscription_enforcement": [
+      "POST to community with canceled subscription - blocked (402)",
+      "GET from community with canceled subscription - allowed (200)",
+      "POST to community without subscription - allowed",
+      "Admin routes exempt from subscription enforcement"
+    ],
+    "rbac": [
+      "All /api/admin/* routes require super admin",
+      "Search requires community membership",
+      "SEO updates require community manager"
+    ]
+  },
+  "subscription_state_at_test_end": {
+    "event-test": "canceled (writes blocked with 402)",
+    "private-notif": "canceled",
+    "design-hub": "canceled"
+  },
+  "mocked_apis": {
+    "payment_provider": "No real payment provider - billing managed via admin API endpoints manually"
+  }
+}

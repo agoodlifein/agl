@@ -20,6 +20,11 @@ from routes.discussion_routes import create_discussion_router
 from routes.discussion_moderation_routes import create_discussion_moderation_router
 from routes.event_routes import create_event_router, create_event_management_router
 from routes.notification_routes import create_admin_notification_router, create_manager_notification_router
+from routes.search_routes import create_search_router
+from routes.seo_routes import create_seo_router
+from routes.subscription_routes import create_subscription_router
+from routes.governance_routes import create_governance_router
+from governance import SubscriptionEnforcementMiddleware
 
 
 ROOT_DIR = Path(__file__).parent
@@ -131,6 +136,22 @@ api_router.include_router(admin_notification_router)
 manager_notification_router = create_manager_notification_router(db)
 api_router.include_router(manager_notification_router)
 
+# Search routes
+search_router = create_search_router(db)
+api_router.include_router(search_router)
+
+# SEO routes
+seo_router = create_seo_router(db)
+api_router.include_router(seo_router)
+
+# Subscription & Billing routes
+subscription_router = create_subscription_router(db)
+api_router.include_router(subscription_router)
+
+# Governance routes
+governance_router = create_governance_router(db)
+api_router.include_router(governance_router)
+
 
 # Include the API router in the main app
 app.include_router(api_router)
@@ -142,6 +163,9 @@ app.mount("/api/media/events", StaticFiles(directory=str(MEDIA_ROOT)), name="eve
 
 
 # ============ MIDDLEWARE ============
+
+# Subscription enforcement (must be before CORS)
+app.add_middleware(SubscriptionEnforcementMiddleware, db=db)
 
 app.add_middleware(
     CORSMiddleware,

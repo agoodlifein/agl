@@ -177,6 +177,23 @@ async def seed_database():
     await db.notification_logs.create_index([('notification_type', 1), ('status', 1)])
     print("   ✓ Notification indexes created")
     
+    # SEO indexes
+    await db.seo_metadata.create_index('seo_id', unique=True)
+    await db.seo_metadata.create_index([('entity_type', 1), ('entity_id', 1), ('community_id', 1)], unique=True)
+    await db.slug_redirects.create_index('redirect_id', unique=True)
+    await db.slug_redirects.create_index([('old_slug', 1), ('entity_type', 1)])
+    print("   ✓ SEO indexes created")
+    
+    # Subscription indexes
+    await db.plans.create_index('plan_id', unique=True)
+    await db.subscriptions.create_index('subscription_id', unique=True)
+    await db.subscriptions.create_index('community_id')
+    await db.subscriptions.create_index([('community_id', 1), ('status', 1)])
+    await db.billing_audit_logs.create_index('audit_id', unique=True)
+    await db.billing_audit_logs.create_index('subscription_id')
+    await db.billing_audit_logs.create_index([('created_at', -1)])
+    print("   ✓ Subscription indexes created")
+    
     # ============ SEED DEFAULT NOTIFICATION TEMPLATES ============
     print("\n📧 Seeding default notification templates...")
     
