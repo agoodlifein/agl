@@ -166,6 +166,20 @@ async def seed_database():
     await db.event_media.create_index('community_id')
     print("   ✓ Event indexes created")
     
+    # ============ DATA MIGRATION ============
+    print("\n🔧 Running data migrations...")
+    
+    # Ensure all communities have privacy and status fields
+    await db.communities.update_many(
+        {'privacy': {'$exists': False}},
+        {'$set': {'privacy': 'public'}}
+    )
+    await db.communities.update_many(
+        {'status': {'$exists': False}},
+        {'$set': {'status': 'active'}}
+    )
+    print("   ✓ Community field defaults applied")
+    
     print("\n✨ Database seeding completed successfully!")
     print("\n🔑 Super Admin Credentials:")
     print(f"   Email: {super_admin_email}")
